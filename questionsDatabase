@@ -1,0 +1,119 @@
+--Create the database and table:
+CREATE DATABASE quiz_game;
+
+USE quiz_game;
+
+CREATE TABLE questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_text VARCHAR(255) NOT NULL,
+    option_a VARCHAR(100),
+    option_b VARCHAR(100),
+    option_c VARCHAR(100),
+    option_d VARCHAR(100),
+    correct_option CHAR(1) NOT NULL
+);
+
+
+--Insert sample data:--
+INSERT INTO questions (question_text, option_a, option_b, option_c, option_d, correct_option)
+VALUES 
+    ('What is the capital of France?', 'Paris', 'London', 'Berlin', 'Madrid', 'A'),
+    ('What is 2 + 2?', '3', '4', '5', '6', 'B'),
+    ('Which planet is known as the Red Planet?', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'B');
+
+--STEP 2  Connect Java to the Database--
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class DatabaseConnection {
+    public static Connection connect() {
+        String url = "jdbc:mysql://localhost:3306/quiz_game"; // Adjust for your database
+        String user = "root"; // Your database username
+        String password = ""; // Your database password
+        try {
+            return DriverManager.getConnection(url, user, password);
+        } catch (SQLException e) {
+            System.out.println("Database connection failed: " + e.getMessage());
+            return null;
+        }
+    }
+}
+
+
+
+-------STEP 3  Fetch Questions from the Database--------
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+
+public class QuestionDAO {
+    public static ArrayList<Question> getQuestions() {
+        ArrayList<Question> questions = new ArrayList<>();
+        String query = "SELECT * FROM questions";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Question question = new Question(
+                    rs.getInt("id"),
+                    rs.getString("question_text"),
+                    rs.getString("option_a"),
+                    rs.getString("option_b"),
+                    rs.getString("option_c"),
+                    rs.getString("option_d"),
+                    rs.getString("correct_option").charAt(0)
+                );
+                questions.add(question);
+            }
+        } catch (Exception e) {
+            System.out.println("Error fetching questions: " + e.getMessage());
+        }
+        return questions;
+    }
+}
+-----Define the Question class:---
+public class Question {
+    private int id;
+    private String questionText;
+    private String optionA;
+    private String optionB;
+    private String optionC;
+    private String optionD;
+    private char correctOption;
+
+    public Question(int id, String questionText, String optionA, String optionB, String optionC, String optionD, char correctOption) {
+        this.id = id;
+        this.questionText = questionText;
+        this.optionA = optionA;
+        this.optionB = optionB;
+        this.optionC = optionC;
+        this.optionD = optionD;
+        this.correctOption = correctOption;
+    }
+
+    // Getters and setters can be added here
+}
+
+
+
+------STEP 4 Use Questions in Your Quiz Game ----
+import java.util.ArrayList;
+
+public class QuizGame {
+    public static void main(String[] args) {
+        ArrayList<Question> questions = QuestionDAO.getQuestions();
+
+        for (Question question : questions) {
+            System.out.println("Q: " + question.getQuestionText());
+            System.out.println("A: " + question.getOptionA());
+            System.out.println("B: " + question.getOptionB());
+            System.out.println("C: " + question.getOptionC());
+            System.out.println("D: " + question.getOptionD());
+            System.out.println("Correct Option: " + question.getCorrectOption());
+            System.out.println("----------------------------");
+        }
+    }
+}
+
